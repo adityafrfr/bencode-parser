@@ -1,43 +1,23 @@
 package bencode
 
-import (
-	"fmt"
-	"log"
-	"strconv"
-	"strings"
-)
+import "fmt"
 
-func decodeInt(input string) (int64, error) {
-	numStr := input[1 : len(input)-1]
-
-	val, err := strconv.Atoi(numStr)
-
-	if err != nil {
-		return -1, fmt.Errorf("got error %q while trying to convert %v to int", err, numStr)
+// THIS FUNCTION CAN PUT ANYTHING INSIDE THE RETURN BOX
+func parseNext(s string, offset int) (any, int, error)	{
+if offset >= len(s) {
+		return nil, 0, fmt.Errorf("unexpected end of input")
 	}
 
-	return int64(val), nil
-}
-
-func decodeString(input string) (string, error) {
-	colonIdx := strings.IndexByte(input, ':')
-
-	length, err := strconv.Atoi(input[:colonIdx])
-
-	if err != nil {
-		log.Fatalf("got err %q while trying to extract string %q", err, input)
-		return "", err
-	}
-
-	start := colonIdx + 1
-
-	val := input[start : start+length]
-
-	return val, nil
-}
-
-func decodeList(input string) ([]interface{}, int, error) {
-	if (input[0] != 'l')	{
-		return nil,0, fmt.Errorf("invalid list start")
+	switch s[offset] {
+	case 'i':
+		// TODO integer
+	case 'l':
+		// TODO list
+	case 'd':
+		// TODO dict
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		// TODO string
+	default:
+		return nil, 0, fmt.Errorf("unexpected byte: %c", s[offset])
 	}
 }
