@@ -1,2 +1,14 @@
 # Local architecture notes. Keep this guide personal until the public package layout settles.
 PROJECT_DESIGN.md
+
+# Scaffold directories — unignore as each package is populated
+bencode/
+metainfo/
+magnet/
+tracker/
+peer/
+protocol/
+storage/
+scheduler/
+client/
+cmd/
