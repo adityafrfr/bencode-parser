@@ -116,9 +116,13 @@ func MapToTorrent(m map[string]any) (*TorrentFile, error) {
 }
 
 func DecodeTorrent(input string) (*TorrentFile, error) {
-	val, _, err := parseNext(input, 0)
+	val, consumed, err := parseNext(input, 0)
 	if err != nil {
 		return nil, err
+	}
+
+	if consumed != len(input) {
+		return nil, fmt.Errorf("trailing data after root bencode element at byte %d", consumed)
 	}
 
 	dict, ok := val.(map[string]any)

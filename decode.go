@@ -41,7 +41,7 @@ func parseList(offset int, s string) (any, int, error) {
 		return nil, 0, fmt.Errorf("invalid list: missing 'e'")
 	}
 
-	return list, current - offset, nil
+	return list, current - offset + 1, nil
 }
 
 func parseDict(offset int, s string) (any, int, error) {
