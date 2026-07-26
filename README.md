@@ -1,23 +1,50 @@
 # Bencode Parser
 
-A Go package built around a general-purpose [bencode](https://en.wikipedia.org/wiki/Bencode) parser, with a convenient typed interface for BitTorrent metainfo files.
+A Go project for decoding and eventually encoding [bencode](https://en.wikipedia.org/wiki/Bencode), with typed parsing for BitTorrent `.torrent` metainfo files.
 
-This is a learning project: the code is deliberately compact and focuses on making the bencode parsing flow easy to follow.
+The immediate goal is a small, dependable general-purpose bencode package that is useful on its own. The torrent API is built above that foundation, so callers can choose the depth they need: raw bencode values when they want full control, or typed torrent metadata when they want convenience.
 
-## Features
+## Current Status
 
-- Decodes bencoded integers, byte strings, lists, and dictionaries.
-- Supports nested lists and dictionaries.
-- Rejects malformed values, incomplete structures, and bytes after the root bencode value.
-- Provides a reusable foundation for working with any bencoded data structure.
-- Maps common `.torrent` fields into typed Go structs.
-- Supports both single-file and multi-file torrents.
+The project currently provides:
 
-## Current status
+- Decoding of bencoded integers, byte strings, lists, and dictionaries.
+- Support for nested bencode values.
+- Rejection of malformed input, incomplete structures, and trailing bytes after the root value.
+- `Decoder` and `Unmarshal` APIs for generic bencode decoding.
+- `ParseTorrentFile` for converting a bencoded torrent metainfo document into typed Go structs.
+- Common single-file and multi-file torrent fields, including announce tiers, files, piece length, and pieces.
 
-The project has a tested bencode parsing core and a complete `DecodeTorrent` flow for common single-file and multi-file torrent metadata. The parser understands bencode's four value types—integers, byte strings, lists, and dictionaries—so the same foundation is suitable for generic bencode tools as well as torrent-specific applications.
+The implementation is still evolving. The public API is being shaped around clear package boundaries, so consumers should expect additions and occasional renames before a stable v1 release.
 
-The next public APIs and integrations are collected in [PLANNED_ADDITIONS.md](PLANNED_ADDITIONS.md). Contributions are welcome.
+## What This Aims To Be
+
+The long-term project has four layers, each useful independently:
+
+```text
+application backend
+        |
+BitTorrent client
+        |
+torrent metainfo API
+        |
+generic bencode codec
+```
+
+The generic codec will remain independent of torrents. The torrent layer will interpret
+`.torrent` metadata and validate it. A future client layer will use that validated
+metadata to communicate with trackers and peers. A backend, if added, will be an
+application built on those reusable libraries rather than part of the codec itself.
+
+## Future Goals
+
+- Add bencode encoding through `Encoder` and `Marshal` APIs.
+- Establish a stable generic value model, including a deliberate binary byte-string API.
+- Split generic bencode and torrent metainfo concerns into separate Go packages.
+- Improve torrent metainfo validation and support canonical info-hash calculation.
+- Add richer torrent metadata support as the typed API matures.
+- Build a BitTorrent client incrementally: storage, peer-wire messages, peers, pieces, and trackers.
+- Build an optional backend above the client for managing torrent jobs and exposing an application API.
 
 ## Installation
 
@@ -31,9 +58,28 @@ Or add the package to an existing Go module:
 import bencode "github.com/adityafrfr/bencode-parser"
 ```
 
-## Torrent usage
+## Generic Bencode Usage
 
-`DecodeTorrent` accepts the raw bencoded contents of a torrent file and returns a `*TorrentFile`.
+`Unmarshal` decodes one complete bencoded value into Go values:
+
+- bencode integers become `int64`
+- bencode byte strings become `string`
+- bencode lists become `[]any`
+- bencode dictionaries become `map[string]any`
+
+```go
+value, err := bencode.Unmarshal([]byte("d3:fooi42ee"))
+if err != nil {
+	panic(err)
+}
+
+dict := value.(map[string]any)
+fmt.Println(dict["foo"]) // 42
+```
+
+## Torrent Usage
+
+`ParseTorrentFile` accepts the raw bencoded contents of a torrent file and returns a `*TorrentFile`.
 
 ```go
 package main
@@ -51,7 +97,7 @@ func main() {
 		panic(err)
 	}
 
-	torrent, err := bencode.DecodeTorrent(string(data))
+	torrent, err := bencode.ParseTorrentFile(string(data))
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +116,7 @@ for _, file := range torrent.Info.Files {
 }
 ```
 
-## Data model
+## Data Model
 
 ```go
 type TorrentFile struct {
@@ -98,7 +144,7 @@ type File struct {
 
 `Info.Length` is used by single-file torrents. Multi-file torrents instead populate `Info.Files`.
 
-## Supported torrent fields
+## Supported Torrent Fields
 
 | Location | Fields |
 | --- | --- |
@@ -122,8 +168,9 @@ Optionally run tests with the race detector:
 go test -race ./...
 ```
 
-## Design notes
+## Design Notes
 
 - Bencoded byte strings, including binary `pieces` data, are represented as Go `string` values. A Go string can contain arbitrary bytes.
-- `DecodeTorrent` is the current public convenience API. It builds on the generic bencode parsing core.
-- The roadmap includes public generic-decoding, encoding, streaming, validation, and torrent tooling APIs.
+- `ParseTorrentFile` is the current public torrent convenience API. It builds on the generic bencode parsing core.
+- The current parser reads the full input before decoding; streaming decode is a future consideration, not a present guarantee.
+- Generic bencode parsing and torrent processing are intentionally separate concerns, even while they currently live in the same Go package.

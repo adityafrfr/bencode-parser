@@ -43,7 +43,7 @@ type TorrentFile struct {
 	Info         InfoDict
 }
 
-func FillTorrentInfo(m map[string]any, tf *TorrentFile) {
+func PopulateTorrentMetadata(m map[string]any, tf *TorrentFile) {
 	if v, ok := m["announce"].(string); ok {
 		tf.Announce = v
 	}
@@ -58,7 +58,7 @@ func FillTorrentInfo(m map[string]any, tf *TorrentFile) {
 	}
 }
 
-func FillRawInfo(rawInfo map[string]any, tf *TorrentFile) {
+func PopulateInfoDict(rawInfo map[string]any, tf *TorrentFile) {
 	info := InfoDict{}
 
 	if v, ok := rawInfo["name"].(string); ok {
@@ -77,7 +77,7 @@ func FillRawInfo(rawInfo map[string]any, tf *TorrentFile) {
 	tf.Info = info
 }
 
-func FillAnnounceList(m map[string]any, tf *TorrentFile) {
+func PopulateAnnounceList(m map[string]any, tf *TorrentFile) {
 	if rawList, ok := m["announce-list"].([]any); ok {
 		for _, subList := range rawList {
 			if stringList, ok := subList.([]any); ok {
@@ -93,7 +93,7 @@ func FillAnnounceList(m map[string]any, tf *TorrentFile) {
 	}
 }
 
-func FillFiles(rawInfo map[string]any, tf *TorrentFile) {
+func PopulateFiles(rawInfo map[string]any, tf *TorrentFile) {
 	if rawFiles, ok := rawInfo["files"].([]any); ok {
 		for _, rf := range rawFiles {
 			if fileMap, ok := rf.(map[string]any); ok {
@@ -114,10 +114,10 @@ func FillFiles(rawInfo map[string]any, tf *TorrentFile) {
 	}
 }
 
-func MapToTorrent(m map[string]any) (*TorrentFile, error) {
+func DecodeTorrentMap(m map[string]any) (*TorrentFile, error) {
 	tf := &TorrentFile{}
 
-	FillTorrentInfo(m, tf)
+	PopulateTorrentMetadata(m, tf)
 
 	rawInfo, ok := m["info"].(map[string]any)
 
@@ -125,14 +125,14 @@ func MapToTorrent(m map[string]any) (*TorrentFile, error) {
 		return nil, fmt.Errorf("missing 'info' dictionary")
 	}
 
-	FillRawInfo(rawInfo, tf)
-	FillAnnounceList(m, tf)
-	FillFiles(rawInfo, tf)
+	PopulateInfoDict(rawInfo, tf)
+	PopulateAnnounceList(m, tf)
+	PopulateFiles(rawInfo, tf)
 
 	return tf, nil
 }
 
-func DecodeTorrent(input string) (*TorrentFile, error) {
+func ParseTorrentFile(input string) (*TorrentFile, error) {
 	val, consumed, err := parseNext(input, 0)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,5 @@ func DecodeTorrent(input string) (*TorrentFile, error) {
 		return nil, fmt.Errorf(" root bencode element must be a dictionary")
 	}
 
-	return MapToTorrent(dict)
+	return DecodeTorrentMap(dict)
 }
-
-

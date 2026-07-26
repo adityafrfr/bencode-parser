@@ -15,7 +15,7 @@ func TestFillTorrentInfo_AllFieldsPresent(t *testing.T) {
 		"creation date": int64(1700000000),
 	}
 	tf := &TorrentFile{}
-	FillTorrentInfo(m, tf)
+	PopulateTorrentMetadata(m, tf)
 
 	if tf.Announce != "http://tracker.example.com/announce" {
 		t.Errorf("Announce = %q, want tracker URL", tf.Announce)
@@ -37,7 +37,7 @@ func TestFillTorrentInfo_MissingFieldsLeaveZeroValues(t *testing.T) {
 		// comment, created by, creation date all absent
 	}
 	tf := &TorrentFile{}
-	FillTorrentInfo(m, tf)
+	PopulateTorrentMetadata(m, tf)
 
 	if tf.Announce != "http://tracker.example.com/announce" {
 		t.Errorf("Announce = %q, want tracker URL", tf.Announce)
@@ -62,7 +62,7 @@ func TestFillTorrentInfo_WrongTypeIsIgnoredNotPanicked(t *testing.T) {
 		"creation date": "not-a-number",
 	}
 	tf := &TorrentFile{}
-	FillTorrentInfo(m, tf)
+	PopulateTorrentMetadata(m, tf)
 
 	if tf.Announce != "" {
 		t.Errorf("Announce = %q, want empty string (wrong type should be ignored)", tf.Announce)
@@ -74,7 +74,7 @@ func TestFillTorrentInfo_WrongTypeIsIgnoredNotPanicked(t *testing.T) {
 
 func TestFillTorrentInfo_EmptyMap(t *testing.T) {
 	tf := &TorrentFile{}
-	FillTorrentInfo(map[string]any{}, tf)
+	PopulateTorrentMetadata(map[string]any{}, tf)
 
 	want := &TorrentFile{}
 	if !reflect.DeepEqual(tf, want) {
@@ -92,7 +92,7 @@ func TestFillRawInfo_SingleFileTorrent(t *testing.T) {
 		"length":       int64(4700372992),
 	}
 	tf := &TorrentFile{}
-	FillRawInfo(rawInfo, tf)
+	PopulateInfoDict(rawInfo, tf)
 
 	if tf.Info.Name != "ubuntu.iso" {
 		t.Errorf("Info.Name = %q, want 'ubuntu.iso'", tf.Info.Name)
@@ -116,7 +116,7 @@ func TestFillRawInfo_MissingLengthStaysZero(t *testing.T) {
 		"piece length": int64(16384),
 	}
 	tf := &TorrentFile{}
-	FillRawInfo(rawInfo, tf)
+	PopulateInfoDict(rawInfo, tf)
 
 	if tf.Info.Name != "my_folder" {
 		t.Errorf("Info.Name = %q, want 'my_folder'", tf.Info.Name)
@@ -136,7 +136,7 @@ func TestFillRawInfo_OverwritesExistingInfo(t *testing.T) {
 	rawInfo := map[string]any{
 		"name": "fresh",
 	}
-	FillRawInfo(rawInfo, tf)
+	PopulateInfoDict(rawInfo, tf)
 
 	if tf.Info.Name != "fresh" {
 		t.Errorf("Info.Name = %q, want 'fresh'", tf.Info.Name)
@@ -156,7 +156,7 @@ func TestFillAnnounceList_MultipleTiers(t *testing.T) {
 		},
 	}
 	tf := &TorrentFile{}
-	FillAnnounceList(m, tf)
+	PopulateAnnounceList(m, tf)
 
 	want := [][]string{
 		{"http://tracker1.example.com/a"},
@@ -169,7 +169,7 @@ func TestFillAnnounceList_MultipleTiers(t *testing.T) {
 
 func TestFillAnnounceList_Absent(t *testing.T) {
 	tf := &TorrentFile{}
-	FillAnnounceList(map[string]any{}, tf)
+	PopulateAnnounceList(map[string]any{}, tf)
 
 	if tf.AnnounceList != nil {
 		t.Errorf("AnnounceList = %v, want nil when key absent", tf.AnnounceList)
@@ -181,7 +181,7 @@ func TestFillAnnounceList_EmptyTierList(t *testing.T) {
 		"announce-list": []any{},
 	}
 	tf := &TorrentFile{}
-	FillAnnounceList(m, tf)
+	PopulateAnnounceList(m, tf)
 
 	if tf.AnnounceList != nil {
 		t.Errorf("AnnounceList = %v, want nil for an empty announce-list", tf.AnnounceList)
@@ -195,7 +195,7 @@ func TestFillAnnounceList_WrongShapeIsSkipped(t *testing.T) {
 		"announce-list": []any{"not-a-tier"},
 	}
 	tf := &TorrentFile{}
-	FillAnnounceList(m, tf)
+	PopulateAnnounceList(m, tf)
 
 	if tf.AnnounceList != nil {
 		t.Errorf("AnnounceList = %v, want nil (malformed tier should be skipped)", tf.AnnounceList)
@@ -218,7 +218,7 @@ func TestFillFiles_MultiFileTorrent(t *testing.T) {
 		},
 	}
 	tf := &TorrentFile{}
-	FillFiles(rawInfo, tf)
+	PopulateFiles(rawInfo, tf)
 
 	want := []File{
 		{Length: 1000, Path: []string{"subdir", "a.txt"}},
@@ -232,7 +232,7 @@ func TestFillFiles_MultiFileTorrent(t *testing.T) {
 func TestFillFiles_Absent(t *testing.T) {
 	// Single-file torrents have no "files" key at all.
 	tf := &TorrentFile{}
-	FillFiles(map[string]any{}, tf)
+	PopulateFiles(map[string]any{}, tf)
 
 	if tf.Info.Files != nil {
 		t.Errorf("Info.Files = %v, want nil when 'files' absent", tf.Info.Files)
@@ -249,7 +249,7 @@ func TestFillFiles_AppendsToExistingFiles(t *testing.T) {
 			map[string]any{"length": int64(5), "path": []any{"one.txt"}},
 		},
 	}
-	FillFiles(rawInfo, tf)
+	PopulateFiles(rawInfo, tf)
 
 	if tf.Info.Name != "keepme" {
 		t.Errorf("Info.Name = %q, want 'keepme' (FillFiles must not clobber other Info fields)", tf.Info.Name)
@@ -266,7 +266,7 @@ func TestFillFiles_MissingPathDefaultsToNil(t *testing.T) {
 		},
 	}
 	tf := &TorrentFile{}
-	FillFiles(rawInfo, tf)
+	PopulateFiles(rawInfo, tf)
 
 	if len(tf.Info.Files) != 1 {
 		t.Fatalf("len(Info.Files) = %d, want 1", len(tf.Info.Files))
@@ -293,7 +293,7 @@ func TestMapToTorrent_SingleFileTorrent(t *testing.T) {
 		},
 	}
 
-	tf, err := MapToTorrent(m)
+	tf, err := DecodeTorrentMap(m)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestMapToTorrent_MultiFileTorrent(t *testing.T) {
 		},
 	}
 
-	tf, err := MapToTorrent(m)
+	tf, err := DecodeTorrentMap(m)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -355,7 +355,7 @@ func TestMapToTorrent_MissingInfoDict(t *testing.T) {
 		// no "info" key at all
 	}
 
-	tf, err := MapToTorrent(m)
+	tf, err := DecodeTorrentMap(m)
 	if err == nil {
 		t.Fatal("expected error for missing 'info' dictionary, got nil")
 	}
@@ -370,7 +370,7 @@ func TestMapToTorrent_InfoWrongType(t *testing.T) {
 		"info":     "not-a-dict",
 	}
 
-	tf, err := MapToTorrent(m)
+	tf, err := DecodeTorrentMap(m)
 	if err == nil {
 		t.Fatal("expected error for 'info' not being a dictionary, got nil")
 	}
@@ -397,7 +397,7 @@ func TestMapToTorrent_FullFieldSet(t *testing.T) {
 		},
 	}
 
-	tf, err := MapToTorrent(m)
+	tf, err := DecodeTorrentMap(m)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -431,7 +431,7 @@ func TestDecodeTorrent_SingleFile(t *testing.T) {
 		"6:lengthi1000e4:name5:file112:piece lengthi16384e6:pieces4:abcde" +
 		"e"
 
-	tf, err := DecodeTorrent(input)
+	tf, err := ParseTorrentFile(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -461,7 +461,7 @@ func TestDecodeTorrent_WithAnnounceListAndTrailingKeys(t *testing.T) {
 		"7:comment4:test4:infod4:name1:x12:piece lengthi1ee" +
 		"e"
 
-	tf, err := DecodeTorrent(input)
+	tf, err := ParseTorrentFile(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -486,7 +486,7 @@ func TestDecodeTorrent_MultiFileWithFilesList(t *testing.T) {
 		"12:piece lengthi16384e5:filesld6:lengthi10e4:pathl5:a.txtee" +
 		"d6:lengthi20e4:pathl6:subdir5:b.txteeeee"
 
-	tf, err := DecodeTorrent(input)
+	tf, err := ParseTorrentFile(input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -502,21 +502,21 @@ func TestDecodeTorrent_MultiFileWithFilesList(t *testing.T) {
 
 func TestDecodeTorrent_NotADictionaryAtRoot(t *testing.T) {
 	// Root element is a bencoded string, not a dictionary.
-	_, err := DecodeTorrent("4:spam")
+	_, err := ParseTorrentFile("4:spam")
 	if err == nil {
 		t.Fatal("expected error when root element is not a dictionary, got nil")
 	}
 }
 
 func TestDecodeTorrent_MalformedBencode(t *testing.T) {
-	_, err := DecodeTorrent("d8:announce")
+	_, err := ParseTorrentFile("d8:announce")
 	if err == nil {
 		t.Fatal("expected error for truncated/malformed bencode input, got nil")
 	}
 }
 
 func TestDecodeTorrent_EmptyInput(t *testing.T) {
-	_, err := DecodeTorrent("")
+	_, err := ParseTorrentFile("")
 	if err == nil {
 		t.Fatal("expected error for empty input, got nil")
 	}
