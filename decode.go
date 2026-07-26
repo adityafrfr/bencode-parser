@@ -44,6 +44,33 @@ func parseList(offset int, s string) (any, int, error) {
 	return list, current - offset, nil
 }
 
+func parseDict(offset int, s string) (any, int, error) {
+	curr := offset + 1
+	dict := make(map[string]any)
+	for curr < len(s) && s[curr] != 'e' {
+		keyVal, consumedKey, err := parseNext(s, curr)
+		if err != nil {
+			return nil, 0, err
+		}
+		key, ok := keyVal.(string)
+		if !ok {
+			return nil, 0, fmt.Errorf("dict key must be a string")
+		}
+		curr += consumedKey
+
+		val, consumedVal, err := parseNext(s, curr)
+		if err != nil {
+			return nil, 0, err
+		}
+		dict[key] = val
+		curr += consumedVal
+	}
+	if curr >= len(s) || s[curr] != 'e' {
+		return nil, 0, fmt.Errorf("invalid dict: missing 'e'")
+	}
+	return dict, (curr - offset) + 1, nil
+}
+
 func parseString(s string, offset int) (any, int, error) {
 	colon := strings.IndexByte(s[offset:], ':')
 	if colon == -1 {
@@ -80,7 +107,7 @@ func parseNext(s string, offset int) (any, int, error) {
 		return parseList(offset, s)
 
 	case 'd':
-		return nil, 0, fmt.Errorf("dict parsing not yet implemented")
+		return parseDict(offset, s)
 
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return parseString(s, offset)
@@ -89,5 +116,3 @@ func parseNext(s string, offset int) (any, int, error) {
 		return nil, 0, fmt.Errorf("unexpected byte: %c", s[offset])
 	}
 }
-
-
