@@ -1,8 +1,8 @@
 package bencode
 
-import(
-	"testing"
+import (
 	"fmt"
+	"testing"
 )
 
 func TestScratch(t *testing.T) {

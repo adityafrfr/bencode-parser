@@ -22,6 +22,28 @@ func parseInt(s string, offset int) (any, int, error) {
 	return val, end + 1, nil
 }
 
+func parseList(offset int, s string) (any, int, error) {
+	current := offset + 1
+
+	var list []any
+
+	for current < len(s) && s[current] != 'e' {
+		item, consumed, err := parseNext(s, current)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		list = append(list, item)
+		current += consumed
+	}
+
+	if current >= len(s) || s[current] != 'e' {
+		return nil, 0, fmt.Errorf("invalid list: missing 'e'")
+	}
+
+	return list, current - offset, nil
+}
+
 func parseString(s string, offset int) (any, int, error) {
 	colon := strings.IndexByte(s[offset:], ':')
 	if colon == -1 {
@@ -55,18 +77,7 @@ func parseNext(s string, offset int) (any, int, error) {
 		return parseInt(s, offset)
 
 	case 'l':
-		current := offset + 1
-
-		var list []any
-
-		for	current < len(s) && s[current] != 'e' {
-			item, consumed, err := parseNext(s, current)
-			if err != nil	{
-				return nil, 0, err
-			}
-		}
-
-		return list
+		return parseList(offset, s)
 
 	case 'd':
 		return nil, 0, fmt.Errorf("dict parsing not yet implemented")
@@ -78,7 +89,5 @@ func parseNext(s string, offset int) (any, int, error) {
 		return nil, 0, fmt.Errorf("unexpected byte: %c", s[offset])
 	}
 }
-
-
 
 
