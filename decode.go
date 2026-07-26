@@ -1,23 +1,84 @@
 package bencode
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+func parseInt(s string, offset int) (any, int, error) {
+
+	end := strings.IndexByte(s[offset:], 'e')
+	if end == -1 {
+		return nil, 0, fmt.Errorf("invalid int, missing the terminating 'e'")
+	}
+
+	numStr := s[offset+1 : offset+end]
+	val, err := strconv.ParseInt(numStr, 10, 64)
+	if err != nil {
+		return nil, 0, fmt.Errorf("Invalid integer: %w", err)
+	}
+
+	return val, end + 1, nil
+}
+
+func parseString(s string, offset int) (any, int, error) {
+	colon := strings.IndexByte(s[offset:], ':')
+	if colon == -1 {
+		return nil, 0, fmt.Errorf("invalid string: missing ':'")
+	}
+
+	length, err := strconv.Atoi(s[offset : offset+colon])
+	if err != nil || length < 0 {
+		return nil, 0, fmt.Errorf("invalid string length")
+	}
+
+	start := offset + colon + 1
+	end := start + length
+
+	if end > len(s) {
+		return nil, 0, fmt.Errorf("string length exceeds input size")
+	}
+
+	return s[start:end], colon + length + 1, nil
+}
 
 // THIS FUNCTION CAN PUT ANYTHING INSIDE THE RETURN BOX
-func parseNext(s string, offset int) (any, int, error)	{
-if offset >= len(s) {
+func parseNext(s string, offset int) (any, int, error) {
+	if offset >= len(s) {
 		return nil, 0, fmt.Errorf("unexpected end of input")
 	}
 
 	switch s[offset] {
+
 	case 'i':
-		// TODO integer
+		return parseInt(s, offset)
+
 	case 'l':
-		// TODO list
+		current := offset + 1
+
+		var list []any
+
+		for	current < len(s) && s[current] != 'e' {
+			item, consumed, err := parseNext(s, current)
+			if err != nil	{
+				return nil, 0, err
+			}
+		}
+
+		return list
+
 	case 'd':
-		// TODO dict
+		return nil, 0, fmt.Errorf("dict parsing not yet implemented")
+
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		// TODO string
+		return parseString(s, offset)
+
 	default:
 		return nil, 0, fmt.Errorf("unexpected byte: %c", s[offset])
 	}
 }
+
+
+
+
