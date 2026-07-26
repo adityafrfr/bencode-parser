@@ -1,3 +1,20 @@
+/* dummy torrent file
+d
+  8:announce   <tracker URL string>
+  13:announce-list  l l <url> <url> e l <url> e e
+  7:comment    <string>
+  10:created by <string>
+  13:creation date <integer>
+  4:info d
+    4:name         <string>
+    12:piece length <integer>
+    6:pieces        <string of concatenated SHA1 hashes>
+    6:length        <integer>        (only if single file)
+    5:files  l d 6:length <int> 4:path l <str> <str> e e ... e   (only if multiple files)
+  e
+e
+*/
+
 package bencode
 
 import (
@@ -134,19 +151,4 @@ func DecodeTorrent(input string) (*TorrentFile, error) {
 	return MapToTorrent(dict)
 }
 
-/* dummy torrent file
-d
-  8:announce   <tracker URL string>
-  13:announce-list  l l <url> <url> e l <url> e e
-  7:comment    <string>
-  10:created by <string>
-  13:creation date <integer>
-  4:info d
-    4:name         <string>
-    12:piece length <integer>
-    6:pieces        <string of concatenated SHA1 hashes>
-    6:length        <integer>        (only if single file)
-    5:files  l d 6:length <int> 4:path l <str> <str> e e ... e   (only if multiple files)
-  e
-e
-*/
+
