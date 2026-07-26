@@ -115,3 +115,4 @@ func parseNext(s string, offset int) (any, int, error) {
 		return nil, 0, fmt.Errorf("unexpected byte: %c", s[offset])
 	}
 }
+
