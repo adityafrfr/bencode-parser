@@ -92,7 +92,6 @@ func parseString(s string, offset int) (any, int, error) {
 	return s[start:end], colon + length + 1, nil
 }
 
-// THIS FUNCTION CAN PUT ANYTHING INSIDE THE RETURN BOX
 func parseNext(s string, offset int) (any, int, error) {
 	if offset >= len(s) {
 		return nil, 0, fmt.Errorf("unexpected end of input")

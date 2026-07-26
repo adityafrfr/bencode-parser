@@ -134,9 +134,7 @@ func DecodeTorrent(input string) (*TorrentFile, error) {
 	return MapToTorrent(dict)
 }
 
-/*
-
-
+/* dummy torrent file
 d
   8:announce   <tracker URL string>
   13:announce-list  l l <url> <url> e l <url> e e
@@ -151,6 +149,4 @@ d
     5:files  l d 6:length <int> 4:path l <str> <str> e e ... e   (only if multiple files)
   e
 e
-
-
 */
